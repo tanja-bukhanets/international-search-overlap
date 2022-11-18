@@ -2,24 +2,25 @@
 import streamlit as st
 st.set_page_config(layout="wide")
 
-import os
+import os # os is a standard Python module, there's no need install it. https://stackoverflow.com/questions/48010748/how-to-install-the-os-module-on-windows
 from matplotlib_venn import venn2, venn2_circles, venn2_unweighted
-#from matplotlib_venn import venn3, venn3_circles
+###from matplotlib_venn import venn3, venn3_circles
 from matplotlib import pyplot as plt
 import pandas as pd # import for the dataframe creation
 import googlesearch # imports the search api
-import random # for random time frames
-import sys #for sys variables
-import time
+import random # random2 # for random time frames
+import sys # ? maybe there's no need install it #for sys variables
+import time # standard, maybe don't need to install
 from oauth2client.client import GoogleCredentials
-from http.client import HTTPSConnection
+from http.client import HTTPSConnection #. #http.client is part of the python3 standard library and does not need to be installed https://stackoverflow.com/questions/44986195/i-cant-install-httpclient-for-python
 from base64 import b64encode
-from json import loads
-from json import dumps
+from json import loads #. # json is a built-in module, you don't need to install it with pip.
+from json import dumps #. #https://stackoverflow.com/questions/41466431/pip-install-json-fails-on-ubuntu
 import requests
 from st_aggrid import AgGrid
 
 from dotenv import load_dotenv
+#from python_dotenv import load_dotenv as dotenv
 load_dotenv()
 
 ##################################################################
@@ -254,7 +255,7 @@ def calculate_overlapscore(**kwargs):
     st.success('Done!')
 
 
-        ##################################################################
+##################################################################
 
 print('if submitted:', submitted)
 if submitted:

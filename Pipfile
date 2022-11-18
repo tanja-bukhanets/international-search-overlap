@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pandas = "*"
+matplotlib = "*"
+matplotlib-venn = "*"
+oauth2client = "*"
+requests = "*"
+streamlit = "*"
+googlesearch-python = "*"
+python-dotenv = "*"
+streamlit-aggrid = "*"
+pybase64 = "*"
+random2 = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"

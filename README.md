@@ -3,10 +3,16 @@ This is a Tool to work with Google Organic SERP API.
 That API provides you with the top 100 SERP results in different search engines
 
 # Run Localy
+Path to pipenv should be present in Env Var PATH
+
+## ToDo
+Append `C:\Users\TetianaBukhanets\AppData\Roaming\Python\Python310\Scripts\` to PATH
 
 ```
-cd C:\Users\TetianaBukhanets\Tanja\Projects\International_Search_Overlap\src
-streamlit run main.py
+cd <Project root>
+pipenv install
+pipenv shell
+streamlit run src/main.py
 ```
 
 # Environment Variables
