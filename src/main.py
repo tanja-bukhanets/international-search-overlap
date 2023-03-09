@@ -4,7 +4,7 @@ st.set_page_config(layout="wide")
 
 import os # os is a standard Python module, there's no need install it. https://stackoverflow.com/questions/48010748/how-to-install-the-os-module-on-windows
 from matplotlib_venn import venn2, venn2_circles, venn2_unweighted
-###from matplotlib_venn import venn3, venn3_circles
+from matplotlib_venn import venn3, venn3_circles
 from matplotlib import pyplot as plt
 import pandas as pd # import for the dataframe creation
 import googlesearch # imports the search api
@@ -28,13 +28,15 @@ load_dotenv()
 header = st.container()
 input_data = st.container()
 # set_keywords = st.container()
+is_keyword_empty = False
 
 keyword_list = []
 
 with header:
     st.title('International Search Overlap')
     st.header('How to use this tool?')
-    st.text('''You have to run every cell by yourself, but:\nIf your input is needed, you must enter/select it first before you run the cell. \nEvery other cell can be run directly.\nRun the cells from top to bottom.''')
+    # st.text('''You have to run every cell by yourself, but:\nIf your input is needed, you must enter/select it first before you run the cell. \nEvery other cell can be run directly.\nRun the cells from top to bottom.''')
+    st.text('In order to calculate overlapscore, enter the data and click the button')
 
 with input_data:
     st.header('Input Data')
@@ -43,11 +45,11 @@ with input_data:
 
 # with st.form("my_form"):
 with input_data.form("my_form"):
-    st.text('In order to calculate overlapscore, enter the data and click the button')
     col1, col2 = st.columns(2, gap="large")
+    submitted = st.form_submit_button("Calculate Overlapscore")
+    col3, col4, col5 = st.columns([1, 2, 1])
     # Now add a submit button to the form:
     # submitted = st.form_submit_button(label="Calculate Overlapscore", help=None, on_click=calculate_overlapscore)
-    submitted = st.form_submit_button("Calculate Overlapscore")
     
 
 
@@ -72,10 +74,15 @@ with col1:
 #with set_keywords:
 with col2:
     st.subheader('Enter the keywords you want to compare')
+    # schadenversicherung haftpflichtversicherung
     keyword1 = st.text_input('keyword1', 'kfzversicherung')
     keyword_list.append(keyword1)
-    keyword2 = st.text_input('keyword2', 'autoversicherung')
+    keyword2 = st.text_input('keyword2', 'autoversicherung deutschland')
     keyword_list.append(keyword2)
+    keyword3 = st.text_input('keyword3', 'kfzversicherung deutschland')
+    keyword_list.append(keyword3)
+    if (len(keyword1) * len(keyword2) == 0):
+        is_keyword_empty = True
     st.text('Your keywords: ' + ', '.join(keyword_list))
 
 
@@ -118,10 +125,8 @@ class RestClient:
 def calculate_overlapscore(**kwargs):
     with st.spinner(text="Wait for it..."):
         params = {key: value for key, value in kwargs.items()}
-        print(params)
         # calculate_overlapscore(keyword_list=keyword_list, language_name=language, location_name=country, device=device)
 
-        #keywords = pd.DataFrame([keyword1,keyword2,keyword3,keyword4,keyword5,keyword6,keyword7,keyword8,keyword9,keyword10,keyword11,keyword12], columns=["keyword"])
         keywords = pd.DataFrame(keyword_list, columns=["keyword"])
         #@title Run this cell to get your Overlapscore!
         keywordlist = list(set(list(keywords["keyword"].values.tolist())))
@@ -131,82 +136,41 @@ def calculate_overlapscore(**kwargs):
             a=1
 
         # simple way to set a task
-        post_data = dict()
+        # post_data = dict()
+        results=[]
+        errors=[]
         for keyword in keywordlist:
-            post_data[len(post_data)] = dict(
-                #se_domain = "google."+ google_tld,
+            # post_data[len(post_data)] = dict(
+            post_data = [dict(
+                #se_domai = "google."+ google_tld,
                 location_name = country,
                 language_name = language,
                 keyword = keyword,
                 device = device,
-            )
+            )]
+            # post_data = [post_data]
 
-        #1
-        #request dataforseo api
-        client = RestClient(os.environ.get('REST_CLIENT_USERNAME'), os.environ.get('REST_CLIENT_PASSWORD'))
-        start = 0
-        end = 100
-        tasks=[]
-        print('Request #1')
-        while(start<len(post_data)):
-            #response = client.post("https://sandbox.dataforseo.com/v3/serp/google/organic/task_post", dict(list(post_data.items())[start:end]))
-            response = client.post("/v3/serp/google/organic/task_post", dict(list(post_data.items())[start:end]))
+            #1
+            #request dataforseo api
+            client = RestClient(os.environ.get('REST_CLIENT_USERNAME'), os.environ.get('REST_CLIENT_PASSWORD'))
+            response = client.post("/v3/serp/google/organic/live/advanced", post_data)
             #you can find the full list of the response codes here https://docs.dataforseo.com/v3/appendix/errors
-            if response["status_code"] == 20000:
-                tasks.append(response["tasks"])
-            else:
+            if response["status_code"] != 20000:
                 print("error. Code: %d Message: %s" % (response["status_code"], response["status_message"]))
-            start=start+100
-            end=end+100
-        taskids=[]
-        for tasklist in tasks:
-            for task in tasklist:
-                taskids.append(task["id"])
-
-        #2
-        completed_tasks = []
-        print('wait for tasks:', taskids)
-        while(len(taskids) > len(list(set(taskids) & set(completed_tasks)))):
-            response = client.get("/v3/serp/google/organic/tasks_ready")
-            try:
-                completed_tasks = [x['id'] for x in response['tasks'][0]['result']]
-            except Exception as e:
-                print(e)
-                print(response)
-
-            print('=' * 30)
-            print('completed tasks:', list(set(taskids) & set(completed_tasks)))
-            print('taskids:', set(taskids))
-            print('comp_tasks:', set(completed_tasks))
-            time.sleep(5)
-
-        #3
-        #get the results
-        results=[]
-        errors=[]
-        print('Request #3')
-        for taskid in taskids:
-            try:
-                #response = client.get("https://sandbox.dataforseo.com/v3/serp/google/organic/task_get/regular/"+taskid+"")
-                response = client.get("/v3/serp/google/organic/task_get/regular/"+taskid+"")
-                # you can find the full list of the response codes here https://docs.dataforseo.com/v3/appendix/errors
-                if response['status_code'] == 20000:
-                    for task in response['tasks']:
-                        if (task['result'] and (len(task['result']) > 0)):
-                            for resultTaskInfo in task['result']:
-                                results.append(resultTaskInfo)
-                            else:
-                                errors.append(task)
-                else:
-                    print("error. Code: %d Message: %s" % (response["status_code"], response["status_message"]))
-            except:
-                errors.append(taskid)
-                print(errors)
-
+                return
+            # print("response['tasks']")
+            # print(response['tasks'])
+            for task in response['tasks']:
+                if (task['result'] and (len(task['result']) > 0)):
+                    for resultTaskInfo in task['result']:
+                        results.append(resultTaskInfo)
+                    else:
+                        errors.append(task)
+        #print('-----------------------results-------------------------------')
+        #print(results)
 
         # put serps into dataframes 
         df = pd.DataFrame(results)
-        #df = df[df['items'].notna()].reset_index()
         organic = pd.DataFrame()
         for j in range(len(df["items"])):
             organic_result = 1
@@ -217,23 +181,87 @@ def calculate_overlapscore(**kwargs):
                     organic = organic.append([df["items"][j][i]])
                     organic_result += 1
         organic = organic.reset_index()
-        organic = organic[['keyword', 'rank_organic', 'rank_absolute', 'title', 'url']]
+        organic = organic[['url', 'keyword', 'rank_organic', 'title']]
 
         #getting the overlap score
         result = pd.merge(organic[organic["keyword"]==keyword1], organic[organic["keyword"]==keyword2], how="inner", on="url")
+        if (len(keywordlist) > 2):
+            result = pd.merge(result, organic[organic["keyword"]==keyword3], how="inner", on="url")
+
         overlapscore = 0 + 10*len(result) #if the lenght is 10 it will be 100%
         for i in range(len(result)):
             # 100% is the max
-            if overlapscore <100:
-                if result.rank_organic_x[i] == result.rank_organic_y[i]:
-                    overlapscore = overlapscore + 1
+            if overlapscore < 100:
+                if (len(keywordlist) > 2):
+                    delta1 = 1/3 if (result.rank_organic_x[i] == result.rank_organic_y[i]) else 1/abs(result.rank_organic_x[i] - result.rank_organic_y[i])/3
+                    delta2 = 1/3 if (result.rank_organic_x[i] == result.rank_organic[i]) else 1/abs(result.rank_organic_x[i] - result.rank_organic[i])/3
+                    delta3 = 1/3 if (result.rank_organic[i] == result.rank_organic_y[i]) else 1/abs(result.rank_organic[i] - result.rank_organic_y[i])/3
+                    overlapscore = overlapscore + delta1 + delta2 + delta3
                 else:
-                    overlapscore = overlapscore + 1/abs((result.rank_organic_x[i] - result.rank_organic_y[i]))
+                    delta = 1 if (result.rank_organic_x[i] == result.rank_organic_y[i]) else 1/abs(result.rank_organic_x[i] - result.rank_organic_y[i])
+                    overlapscore = overlapscore + delta
             else:
                 break
+
+        
+
         fig = plt.figure(figsize=(10, 10))
-        venn2(subsets = (round(100 - overlapscore,2), round(100 - overlapscore,2), round(overlapscore,2)), set_labels = (keyword1, keyword2))
-        plt.show()
+
+        if (len(keywordlist) > 2):
+            value_ABC = round(overlapscore, 2)
+
+            if (overlapscore == 0):
+                value_AB_list = []
+                keywordpair_list = [
+                    [keyword1, keyword2],
+                    [keyword1, keyword3],
+                    [keyword2, keyword3]
+                ]
+                for j in range(len(keywordlist)):
+                    #getting the overlap score
+                    result = pd.merge(organic[organic["keyword"]==keywordpair_list[j][0]], organic[organic["keyword"]==keywordpair_list[j][1]], how="inner", on="url")
+
+                    value_AB = 0 + 10*len(result) #if the lenght is 10 it will be 100%
+                    for i in range(len(result)):
+                        if value_AB < 100:
+                            delta = 1 if (result.rank_organic_x[i] == result.rank_organic_y[i]) else 1/abs(result.rank_organic_x[i] - result.rank_organic_y[i])
+                            value_AB = value_AB + delta
+                        else:
+                            break
+                    value_AB_list.append(round(value_AB, 2))
+
+                value_AB = value_AB_list[0]
+                value_AC = value_AB_list[1]
+                value_BC = value_AB_list[2]
+            else:                    
+                value_AC = value_BC = value_AB = round((100 - value_ABC) / 20, 2)
+                
+            value_A = round(100 - value_AB - value_AC - value_ABC, 2)
+            value_B = round(100 - value_AB - value_BC - value_ABC, 2)
+            value_C = round(100 - value_BC - value_AC - value_ABC, 2)
+
+            # venn3(subsets = (round(100 - overlapscore,2), round(100 - overlapscore,2), round(overlapscore,2), round(100 - overlapscore,2), round(overlapscore,2), round(overlapscore,2), 1), set_labels = ('Group A', 'Group B', 'Group C'), alpha = 0.5);
+            colors = ['darkviolet','deepskyblue','blue']
+            subsets_venn3 = (value_A, value_B, value_AB, value_C, value_AC, value_BC, value_ABC)
+            vd = venn3(subsets = subsets_venn3, set_labels = (keyword1, keyword2, keyword3), alpha = 0.5, set_colors=colors);
+            labels = ['100', '101', '110', '010', '001', '011']
+            for label in labels:
+                vd.get_label_by_id(label).set_text('')
+            
+            if (overlapscore == 0):
+                lbl = vd.get_label_by_id("B")
+                x, y = lbl.get_position()
+                lbl.set_position((x+0.4, y+0.9))
+                lbl = vd.get_label_by_id("A")
+                x, y = lbl.get_position()
+                lbl.set_position((x-0.2, y))
+        else:
+            colors = ['blue', 'deepskyblue']
+            v2 = venn2(subsets = (round(100 - overlapscore,2), round(100 - overlapscore,2), round(overlapscore,2)), set_labels = (keyword1, keyword2), alpha = 0.5, set_colors=colors)
+            for label in ['10', '01']:
+                v2.get_label_by_id(label).set_text('')
+
+        plt.show()        
         print("")
         print("Your overlapscore is:", round(overlapscore,2),"%")
         print("")
@@ -244,28 +272,33 @@ def calculate_overlapscore(**kwargs):
 
         ##################################################################
 
-        get_overlapscore = st.container()
+        with col4:
+            get_overlapscore = st.container()
 
-        with get_overlapscore:
-            st.header('Your Overlapscore')
-            st.pyplot(fig)
-            # st.table(result)
-            AgGrid(result)
+            with get_overlapscore:
+                st.header('Your Overlapscore')
+                st.pyplot(fig)
+                # st.table(result)
+        AgGrid(result)
 
     st.success('Done!')
 
 
 ##################################################################
 
-print('if submitted:', submitted)
+# print('if submitted:', submitted)
 if submitted:
-    submitted = False
-    # st.write("slider", slider_val, "checkbox", checkbox_val)
-    st.write({
-        'keyword_list': keyword_list,
-        'language': language,
-        'country': country,
-        'device': device
-    })
-    # calculate_overlapscore(keyword_list=keyword_list, language=language, country=country, device=device)
-    calculate_overlapscore(keyword_list=keyword_list, language_name=language, location_name=country, device=device)
+    submited = False
+    # st.wtrite("slider", slider_val, "checkbox", checkbox_val)
+    #st.write({
+    #    'keyword_list': keyword_list,
+    #    'language': language,
+    #    'country': country,
+    #   'device': device
+    #})
+    # st.text(keyword_list)
+    if is_keyword_empty:
+        st.error("keyword1 and keyword2 cannot be empty")
+        is_keyword_empty = False
+    else:
+        calculate_overlapscore(keyword_list=keyword_list, language_name=language, location_name=country, device=device)
