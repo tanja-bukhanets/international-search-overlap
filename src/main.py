@@ -23,6 +23,11 @@ from dotenv import load_dotenv
 #from python_dotenv import load_dotenv as dotenv
 load_dotenv()
 
+def local_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+local_css("src/style.css")
 ##################################################################
 
 header = st.container()
@@ -33,10 +38,10 @@ is_keyword_empty = False
 keyword_list = []
 
 with header:
-    st.title('International Search Overlap')
+    # st.title('International Search Overlap')
     st.header('How to use this tool?')
     # st.text('''You have to run every cell by yourself, but:\nIf your input is needed, you must enter/select it first before you run the cell. \nEvery other cell can be run directly.\nRun the cells from top to bottom.''')
-    st.text('In order to calculate overlapscore, enter the data and click the button')
+    st.subheader('In order to calculate overlapscore, enter the data and click the button')
 
 with input_data:
     st.header('Input Data')
